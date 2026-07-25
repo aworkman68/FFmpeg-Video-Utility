@@ -22,9 +22,45 @@ main {
   display: grid;
   min-height: 100vh;
   place-items: center;
+  padding: 2rem;
 }
 
 h1 {
   font-size: clamp(2rem, 6vw, 4rem);
   font-weight: 600;
+  margin: 0;
+}
+
+.video-selector {
+  display: grid;
+  justify-items: center;
+  gap: 1.5rem;
+  width: min(100%, 48rem);
+  text-align: center;
+}
+
+button {
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  color: #18181b;
+  background: #f4f4f5;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #d4d4d8;
+}
+
+button:focus-visible {
+  outline: 3px solid #60a5fa;
+  outline-offset: 3px;
+}
+
+.selected-path {
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: #a1a1aa;
 }

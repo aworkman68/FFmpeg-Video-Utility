@@ -8,9 +8,9 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "rootDir": "electron",
+    "rootDir": ".",
     "outDir": "dist-electron",
     "types": ["node"]
   },
-  "include": ["electron/**/*.ts"]
+  "include": ["electron/**/*.ts", "shared/**/*.ts"]
 }

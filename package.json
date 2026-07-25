@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "A Windows desktop FFmpeg utility",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "npm run build:electron && concurrently -k \"vite\" \"tsc -p tsconfig.electron.json --watch\" \"wait-on tcp:5173 && electron .\"",
     "build:electron": "tsc -p tsconfig.electron.json",

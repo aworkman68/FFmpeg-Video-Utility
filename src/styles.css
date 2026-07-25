@@ -64,3 +64,8 @@ button:focus-visible {
   margin: 0;
   color: #a1a1aa;
 }
+
+.selection-error {
+  margin: 0;
+  color: #fca5a5;
+}

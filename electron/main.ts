@@ -1,6 +1,11 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import path from "node:path";
-import { SELECT_VIDEO_CHANNEL } from "../shared/preload-api";
+import {
+  GET_FFMPEG_STATUS_CHANNEL,
+  SELECT_VIDEO_CHANNEL,
+  type FfmpegAvailabilityResult
+} from "../shared/preload-api";
+import { checkFfmpegAvailability } from "./ffmpeg-availability";
 
 /**
  * Indicates whether Electron is loading content from the Vite development server.
@@ -25,7 +30,9 @@ const videoExtensions = [
 /**
  * Registers the narrow set of renderer requests accepted by the main process.
  */
-function registerIpcHandlers(): void {
+function registerIpcHandlers(
+  ffmpegStatusPromise: Promise<FfmpegAvailabilityResult>
+): void {
   ipcMain.handle(SELECT_VIDEO_CHANNEL, async (): Promise<string | null> => {
     // The native dialog result distinguishes cancellation from an application error.
     const result = await dialog.showOpenDialog({
@@ -46,6 +53,11 @@ function registerIpcHandlers(): void {
     // Only one path is possible because multi-selection is not enabled.
     return result.filePaths[0] ?? null;
   });
+
+  ipcMain.handle(
+    GET_FFMPEG_STATUS_CHANNEL,
+    (): Promise<FfmpegAvailabilityResult> => ffmpegStatusPromise
+  );
 }
 
 /**
@@ -75,7 +87,10 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  registerIpcHandlers();
+  // Start the shell-free FFmpeg probe once and share its cached result with renderers.
+  const ffmpegStatusPromise = checkFfmpegAvailability();
+
+  registerIpcHandlers(ffmpegStatusPromise);
   createWindow();
 
   app.on("activate", () => {

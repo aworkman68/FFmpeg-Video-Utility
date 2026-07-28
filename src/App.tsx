@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { FfmpegAvailabilityResult } from "../shared/preload-api";
 
 /**
  * Renders the first application slice for choosing an input video.
@@ -9,6 +10,43 @@ export default function App() {
 
   // A bridge or main-process failure is reported separately from cancellation.
   const [selectionError, setSelectionError] = useState<string | null>(null);
+
+  // A null status means the renderer is still waiting for the startup check.
+  const [ffmpegStatus, setFfmpegStatus] =
+    useState<FfmpegAvailabilityResult | null>(null);
+
+  useEffect(() => {
+    // Prevent an asynchronous response from updating an unmounted component.
+    let isMounted = true;
+
+    /**
+     * Reads the main process's cached startup check through the preload bridge.
+     */
+    async function loadFfmpegStatus(): Promise<void> {
+      try {
+        const status = await window.desktop.getFfmpegStatus();
+
+        if (isMounted) {
+          setFfmpegStatus(status);
+        }
+      } catch {
+        if (isMounted) {
+          setFfmpegStatus({
+            available: false,
+            versionText: null,
+            executablePath: null,
+            errorMessage: "The FFmpeg status could not be loaded."
+          });
+        }
+      }
+    }
+
+    void loadFfmpegStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   /**
    * Requests a video path through the secure preload API.
@@ -44,6 +82,37 @@ export default function App() {
             {selectionError}
           </p>
         )}
+        <section className="ffmpeg-status" aria-labelledby="ffmpeg-status-title">
+          <h2 id="ffmpeg-status-title">FFmpeg status</h2>
+          {ffmpegStatus === null ? (
+            <p>Checking FFmpeg availability…</p>
+          ) : (
+            <>
+              <p
+                className={
+                  ffmpegStatus.available
+                    ? "status-available"
+                    : "status-unavailable"
+                }
+              >
+                {ffmpegStatus.available ? "Available" : "Unavailable"}
+              </p>
+              {ffmpegStatus.executablePath !== null && (
+                <p>
+                  <strong>Executable:</strong> {ffmpegStatus.executablePath}
+                </p>
+              )}
+              {ffmpegStatus.versionText !== null && (
+                <pre>{ffmpegStatus.versionText}</pre>
+              )}
+              {ffmpegStatus.errorMessage !== null && (
+                <p className="status-unavailable">
+                  {ffmpegStatus.errorMessage}
+                </p>
+              )}
+            </>
+          )}
+        </section>
       </section>
     </main>
   );

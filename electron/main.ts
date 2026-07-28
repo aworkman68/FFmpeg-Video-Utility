@@ -81,8 +81,20 @@ function registerIpcHandlers(
  * Creates the native application menu for the supplied renderer window.
  */
 function createApplicationMenu(window: BrowserWindow): void {
-  // Each menu command sends only its fixed viewer identifier to React.
+  // Array order determines the left-to-right order of top-level menu items.
   const menuTemplate: MenuItemConstructorOptions[] = [
+    {
+      label: "File",
+      submenu: [
+        {
+          label: "Exit",
+          accelerator: "Alt+F4",
+          click: () => {
+            app.quit();
+          }
+        }
+      ]
+    },
     {
       label: "View",
       submenu: [
@@ -96,6 +108,25 @@ function createApplicationMenu(window: BrowserWindow): void {
           label: "FFmpeg Version",
           click: () => {
             window.webContents.send(SHOW_FFMPEG_VIEWER_CHANNEL, "version");
+          }
+        }
+      ]
+    },
+    {
+      label: "About",
+      submenu: [
+        {
+          label: "Version",
+          click: () => {
+            // app.getVersion reads the authoritative package version.
+            void dialog.showMessageBox(window, {
+              type: "info",
+              title: "FFmpeg Video Utility",
+              message: "FFmpeg Video Utility",
+              detail: `Version ${app.getVersion()}`,
+              buttons: ["OK"],
+              noLink: true
+            });
           }
         }
       ]

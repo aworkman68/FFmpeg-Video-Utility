@@ -19,6 +19,16 @@ export const GET_FFMPEG_STATUS_CHANNEL = "ffmpeg:get-status";
 export type GetFfmpegStatusChannel = typeof GET_FFMPEG_STATUS_CHANNEL;
 
 /**
+ * The IPC channel used to inspect a selected video with ffprobe.
+ */
+export const INSPECT_VIDEO_CHANNEL = "ffprobe:inspect-video";
+
+/**
+ * Preserves the inspection channel name for the sandboxed preload.
+ */
+export type InspectVideoChannel = typeof INSPECT_VIDEO_CHANNEL;
+
+/**
  * Describes the result of attempting to run FFmpeg.
  */
 export interface FfmpegAvailabilityResult {
@@ -27,6 +37,28 @@ export interface FfmpegAvailabilityResult {
   executablePath: string | null;
   errorMessage: string | null;
 }
+
+/**
+ * Contains normalized metadata needed by the renderer.
+ */
+export interface VideoMetadata {
+  durationSeconds: number;
+}
+
+/**
+ * Represents either valid video metadata or a safe inspection error.
+ */
+export type VideoMetadataResult =
+  | {
+      success: true;
+      metadata: VideoMetadata;
+      errorMessage: null;
+    }
+  | {
+      success: false;
+      metadata: null;
+      errorMessage: string;
+    };
 
 /**
  * Describes the deliberately small API exposed by the preload script.
@@ -42,4 +74,9 @@ export interface DesktopApi {
    * Returns the cached FFmpeg availability result produced at startup.
    */
   getFfmpegStatus: () => Promise<FfmpegAvailabilityResult>;
+
+  /**
+   * Inspects one selected video and returns normalized metadata.
+   */
+  inspectVideo: (videoPath: string) => Promise<VideoMetadataResult>;
 }

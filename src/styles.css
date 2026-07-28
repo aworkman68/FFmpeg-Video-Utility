@@ -70,6 +70,14 @@ button:focus-visible {
   color: #fca5a5;
 }
 
+.video-metadata {
+  min-height: 1.5rem;
+}
+
+.video-metadata p {
+  margin: 0;
+}
+
 .ffmpeg-status {
   width: 100%;
   padding: 1rem;

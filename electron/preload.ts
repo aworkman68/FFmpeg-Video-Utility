@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type {
   DesktopApi,
   GetFfmpegStatusChannel,
+  InspectVideoChannel,
   SelectVideoChannel
 } from "../shared/preload-api";
 
@@ -19,6 +20,11 @@ const selectVideoChannel: SelectVideoChannel = "dialog:select-video";
 const getFfmpegStatusChannel: GetFfmpegStatusChannel = "ffmpeg:get-status";
 
 /**
+ * The allow-listed video inspection channel emitted for sandbox support.
+ */
+const inspectVideoChannel: InspectVideoChannel = "ffprobe:inspect-video";
+
+/**
  * The complete, typed API made available to the untrusted renderer.
  */
 const desktopApi: DesktopApi = Object.freeze({
@@ -30,7 +36,13 @@ const desktopApi: DesktopApi = Object.freeze({
   /**
    * Reads the cached FFmpeg check from the main process.
    */
-  getFfmpegStatus: () => ipcRenderer.invoke(getFfmpegStatusChannel)
+  getFfmpegStatus: () => ipcRenderer.invoke(getFfmpegStatusChannel),
+
+  /**
+   * Requests normalized metadata for one main-process-validated video path.
+   */
+  inspectVideo: (videoPath: string) =>
+    ipcRenderer.invoke(inspectVideoChannel, videoPath)
 });
 
 // Expose methods individually instead of giving the renderer direct IPC access.

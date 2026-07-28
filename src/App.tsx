@@ -1,5 +1,23 @@
 import { useEffect, useState } from "react";
-import type { FfmpegAvailabilityResult } from "../shared/preload-api";
+import type {
+  FfmpegAvailabilityResult,
+  VideoMetadataResult
+} from "../shared/preload-api";
+
+/**
+ * Converts a duration in seconds to a zero-padded HH:MM:SS string.
+ */
+function formatDuration(durationSeconds: number): string {
+  // Whole seconds are displayed without overstating the video's duration.
+  const totalSeconds = Math.floor(durationSeconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return [hours, minutes, seconds]
+    .map((value) => value.toString().padStart(2, "0"))
+    .join(":");
+}
 
 /**
  * Renders the first application slice for choosing an input video.
@@ -14,6 +32,13 @@ export default function App() {
   // A null status means the renderer is still waiting for the startup check.
   const [ffmpegStatus, setFfmpegStatus] =
     useState<FfmpegAvailabilityResult | null>(null);
+
+  // Metadata is cleared whenever a new video selection begins.
+  const [videoMetadataResult, setVideoMetadataResult] =
+    useState<VideoMetadataResult | null>(null);
+
+  // Tracks the asynchronous ffprobe request for user feedback.
+  const [isInspectingVideo, setIsInspectingVideo] = useState(false);
 
   useEffect(() => {
     // Prevent an asynchronous response from updating an unmounted component.
@@ -61,6 +86,22 @@ export default function App() {
       // Cancellation returns null and leaves the current selection unchanged.
       if (videoPath !== null) {
         setSelectedVideoPath(videoPath);
+        setVideoMetadataResult(null);
+        setIsInspectingVideo(true);
+
+        try {
+          // Process execution stays behind the typed preload API.
+          const metadataResult = await window.desktop.inspectVideo(videoPath);
+          setVideoMetadataResult(metadataResult);
+        } catch {
+          setVideoMetadataResult({
+            success: false,
+            metadata: null,
+            errorMessage: "Video metadata could not be loaded."
+          });
+        } finally {
+          setIsInspectingVideo(false);
+        }
       }
     } catch {
       setSelectionError("The video picker could not be opened.");
@@ -77,6 +118,24 @@ export default function App() {
         <p className="selected-path" aria-live="polite">
           {selectedVideoPath ?? "No video selected"}
         </p>
+        <div className="video-metadata" aria-live="polite">
+          {isInspectingVideo && <p>Inspecting video metadata...</p>}
+          {!isInspectingVideo && videoMetadataResult?.success && (
+            <p>
+              <strong>Duration:</strong>{" "}
+              {formatDuration(
+                videoMetadataResult.metadata.durationSeconds
+              )}
+            </p>
+          )}
+          {!isInspectingVideo &&
+            videoMetadataResult !== null &&
+            !videoMetadataResult.success && (
+              <p className="selection-error" role="alert">
+                {videoMetadataResult.errorMessage}
+              </p>
+            )}
+        </div>
         {selectionError !== null && (
           <p className="selection-error" role="alert">
             {selectionError}

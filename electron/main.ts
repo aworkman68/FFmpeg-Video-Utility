@@ -2,10 +2,13 @@ import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import path from "node:path";
 import {
   GET_FFMPEG_STATUS_CHANNEL,
+  INSPECT_VIDEO_CHANNEL,
   SELECT_VIDEO_CHANNEL,
-  type FfmpegAvailabilityResult
+  type FfmpegAvailabilityResult,
+  type VideoMetadataResult
 } from "../shared/preload-api";
 import { checkFfmpegAvailability } from "./ffmpeg-availability";
+import { inspectVideoMetadata } from "./video-metadata";
 
 /**
  * Indicates whether Electron is loading content from the Vite development server.
@@ -57,6 +60,12 @@ function registerIpcHandlers(
   ipcMain.handle(
     GET_FFMPEG_STATUS_CHANNEL,
     (): Promise<FfmpegAvailabilityResult> => ffmpegStatusPromise
+  );
+
+  ipcMain.handle(
+    INSPECT_VIDEO_CHANNEL,
+    (_event, videoPath: unknown): Promise<VideoMetadataResult> =>
+      inspectVideoMetadata(videoPath)
   );
 }
 

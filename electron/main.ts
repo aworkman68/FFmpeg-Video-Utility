@@ -1,9 +1,17 @@
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  type MenuItemConstructorOptions
+} from "electron";
 import path from "node:path";
 import {
   GET_FFMPEG_STATUS_CHANNEL,
   INSPECT_VIDEO_CHANNEL,
   SELECT_VIDEO_CHANNEL,
+  SHOW_FFMPEG_VIEWER_CHANNEL,
   type FfmpegAvailabilityResult,
   type VideoMetadataResult
 } from "../shared/preload-api";
@@ -70,6 +78,34 @@ function registerIpcHandlers(
 }
 
 /**
+ * Creates the native application menu for the supplied renderer window.
+ */
+function createApplicationMenu(window: BrowserWindow): void {
+  // Each menu command sends only its fixed viewer identifier to React.
+  const menuTemplate: MenuItemConstructorOptions[] = [
+    {
+      label: "View",
+      submenu: [
+        {
+          label: "FFmpeg Status",
+          click: () => {
+            window.webContents.send(SHOW_FFMPEG_VIEWER_CHANNEL, "status");
+          }
+        },
+        {
+          label: "FFmpeg Version",
+          click: () => {
+            window.webContents.send(SHOW_FFMPEG_VIEWER_CHANNEL, "version");
+          }
+        }
+      ]
+    }
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
+}
+
+/**
  * Creates the secured application window and loads the React renderer.
  */
 function createWindow(): void {
@@ -87,6 +123,8 @@ function createWindow(): void {
       sandbox: true
     }
   });
+
+  createApplicationMenu(window);
 
   if (isDevelopment) {
     void window.loadURL("http://localhost:5173");

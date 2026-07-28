@@ -40,6 +40,10 @@ export default function App() {
   // Tracks the asynchronous ffprobe request for user feedback.
   const [isInspectingVideo, setIsInspectingVideo] = useState(false);
 
+  // Viewer visibility is controlled by Electron's native View menu.
+  const [isStatusViewerOpen, setIsStatusViewerOpen] = useState(false);
+  const [isVersionViewerOpen, setIsVersionViewerOpen] = useState(false);
+
   useEffect(() => {
     // Prevent an asynchronous response from updating an unmounted component.
     let isMounted = true;
@@ -71,6 +75,20 @@ export default function App() {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    /**
+     * Opens the requested viewer and closes the other to avoid stacked dialogs.
+     */
+    const removeViewerListener = window.desktop.onShowFfmpegViewer(
+      (viewer) => {
+        setIsStatusViewerOpen(viewer === "status");
+        setIsVersionViewerOpen(viewer === "version");
+      }
+    );
+
+    return removeViewerListener;
   }, []);
 
   /**
@@ -141,37 +159,80 @@ export default function App() {
             {selectionError}
           </p>
         )}
-        <section className="ffmpeg-status" aria-labelledby="ffmpeg-status-title">
-          <h2 id="ffmpeg-status-title">FFmpeg status</h2>
-          {ffmpegStatus === null ? (
-            <p>Checking FFmpeg availability…</p>
-          ) : (
-            <>
-              <p
-                className={
-                  ffmpegStatus.available
-                    ? "status-available"
-                    : "status-unavailable"
-                }
+        {isStatusViewerOpen && (
+          <section
+            className="ffmpeg-viewer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ffmpeg-status-title"
+          >
+            <div className="viewer-heading">
+              <h2 id="ffmpeg-status-title">FFmpeg Status</h2>
+              <button
+                type="button"
+                className="close-button"
+                onClick={() => setIsStatusViewerOpen(false)}
               >
-                {ffmpegStatus.available ? "Available" : "Unavailable"}
+                Close
+              </button>
+            </div>
+            {ffmpegStatus === null ? (
+              <p>Checking FFmpeg availability...</p>
+            ) : (
+              <>
+                <p
+                  className={
+                    ffmpegStatus.available
+                      ? "status-available"
+                      : "status-unavailable"
+                  }
+                >
+                  {ffmpegStatus.available ? "Available" : "Unavailable"}
+                </p>
+                {ffmpegStatus.executablePath !== null && (
+                  <p>
+                    <strong>Executable:</strong>{" "}
+                    {ffmpegStatus.executablePath}
+                  </p>
+                )}
+                {ffmpegStatus.errorMessage !== null && (
+                  <p className="status-unavailable">
+                    {ffmpegStatus.errorMessage}
+                  </p>
+                )}
+              </>
+            )}
+          </section>
+        )}
+        {isVersionViewerOpen && (
+          <section
+            className="ffmpeg-viewer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ffmpeg-version-title"
+          >
+            <div className="viewer-heading">
+              <h2 id="ffmpeg-version-title">FFmpeg Version</h2>
+              <button
+                type="button"
+                className="close-button"
+                onClick={() => setIsVersionViewerOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            {ffmpegStatus === null ? (
+              <p>Checking FFmpeg version...</p>
+            ) : ffmpegStatus.versionText !== null ? (
+              <pre>{ffmpegStatus.versionText}</pre>
+            ) : (
+              <p className="status-unavailable">
+                {ffmpegStatus.errorMessage ??
+                  "FFmpeg version information is unavailable."}
               </p>
-              {ffmpegStatus.executablePath !== null && (
-                <p>
-                  <strong>Executable:</strong> {ffmpegStatus.executablePath}
-                </p>
-              )}
-              {ffmpegStatus.versionText !== null && (
-                <pre>{ffmpegStatus.versionText}</pre>
-              )}
-              {ffmpegStatus.errorMessage !== null && (
-                <p className="status-unavailable">
-                  {ffmpegStatus.errorMessage}
-                </p>
-              )}
-            </>
-          )}
-        </section>
+            )}
+          </section>
+        )}
       </section>
     </main>
   );

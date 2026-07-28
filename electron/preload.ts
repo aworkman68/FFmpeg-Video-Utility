@@ -1,9 +1,11 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type {
   DesktopApi,
+  FfmpegViewer,
   GetFfmpegStatusChannel,
   InspectVideoChannel,
-  SelectVideoChannel
+  SelectVideoChannel,
+  ShowFfmpegViewerChannel
 } from "../shared/preload-api";
 
 /**
@@ -25,6 +27,12 @@ const getFfmpegStatusChannel: GetFfmpegStatusChannel = "ffmpeg:get-status";
 const inspectVideoChannel: InspectVideoChannel = "ffprobe:inspect-video";
 
 /**
+ * The allow-listed main-to-renderer viewer channel emitted for sandbox support.
+ */
+const showFfmpegViewerChannel: ShowFfmpegViewerChannel =
+  "ffmpeg:show-viewer";
+
+/**
  * The complete, typed API made available to the untrusted renderer.
  */
 const desktopApi: DesktopApi = Object.freeze({
@@ -42,7 +50,36 @@ const desktopApi: DesktopApi = Object.freeze({
    * Requests normalized metadata for one main-process-validated video path.
    */
   inspectVideo: (videoPath: string) =>
-    ipcRenderer.invoke(inspectVideoChannel, videoPath)
+    ipcRenderer.invoke(inspectVideoChannel, videoPath),
+
+  /**
+   * Relays validated menu events without exposing Electron's event object.
+   */
+  onShowFfmpegViewer: (
+    listener: (viewer: FfmpegViewer) => void
+  ): (() => void) => {
+    /**
+     * Filters the untyped IPC payload before it reaches the renderer callback.
+     */
+    const handleViewerRequest = (
+      _event: Electron.IpcRendererEvent,
+      viewer: unknown
+    ): void => {
+      if (viewer === "status" || viewer === "version") {
+        listener(viewer);
+      }
+    };
+
+    ipcRenderer.on(showFfmpegViewerChannel, handleViewerRequest);
+
+    // React calls this cleanup function when its component unmounts.
+    return () => {
+      ipcRenderer.removeListener(
+        showFfmpegViewerChannel,
+        handleViewerRequest
+      );
+    };
+  }
 });
 
 // Expose methods individually instead of giving the renderer direct IPC access.

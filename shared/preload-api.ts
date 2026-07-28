@@ -29,6 +29,21 @@ export const INSPECT_VIDEO_CHANNEL = "ffprobe:inspect-video";
 export type InspectVideoChannel = typeof INSPECT_VIDEO_CHANNEL;
 
 /**
+ * The main-to-renderer channel used to open an FFmpeg information viewer.
+ */
+export const SHOW_FFMPEG_VIEWER_CHANNEL = "ffmpeg:show-viewer";
+
+/**
+ * Preserves the viewer channel name for the sandboxed preload.
+ */
+export type ShowFfmpegViewerChannel = typeof SHOW_FFMPEG_VIEWER_CHANNEL;
+
+/**
+ * Identifies the two FFmpeg viewers available from Electron's View menu.
+ */
+export type FfmpegViewer = "status" | "version";
+
+/**
  * Describes the result of attempting to run FFmpeg.
  */
 export interface FfmpegAvailabilityResult {
@@ -79,4 +94,12 @@ export interface DesktopApi {
    * Inspects one selected video and returns normalized metadata.
    */
   inspectVideo: (videoPath: string) => Promise<VideoMetadataResult>;
+
+  /**
+   * Subscribes to native menu requests to show an FFmpeg viewer.
+   * The returned function removes the subscription.
+   */
+  onShowFfmpegViewer: (
+    listener: (viewer: FfmpegViewer) => void
+  ) => () => void;
 }
